@@ -2,6 +2,7 @@ package fr.stormlab.crowdsourcing.service;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +13,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import fr.stormlab.crowdsourcing.MainActivity;
 import fr.stormlab.crowdsourcing.R;
 import fr.stormlab.crowdsourcing.wifi.WifiJobService;
 
@@ -48,11 +50,11 @@ public class ForegroundService extends Service {
 
     // Generate (or modify if existing) a notification
     private void generateNotification(Context context, String message) {
+        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        // TODO : Put this in configuration
-        String channelId = "CrowdsourcingID";
-        // TODO : Put this in configuration
-        String channelName = "Crowdsourcing";
+        String channelId = getString(R.string.channel_id);
+        String channelName = getString(R.string.channel_name);
         int importance = NotificationManager.IMPORTANCE_HIGH;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -60,10 +62,10 @@ public class ForegroundService extends Service {
             notificationManager.createNotificationChannel(channel);
         }
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId);
-        // TODO : Put this in configuration
-        builder.setContentTitle("Crowdsourcing Results");
+        builder.setContentTitle(getString(R.string.notification_title));
         builder.setContentText(message);
         builder.setSmallIcon(R.mipmap.ic_launcher);
+        builder.setContentIntent(pendingIntent);
         startForeground(ForegroundService.NOTIFICATION_ID, builder.build());
     }
 

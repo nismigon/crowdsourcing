@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Crowdsourcing</string>
+    <!-- Activity main -->
+    <string name="activity_main_title">Crowdsourcing</string>
+    <string name="activity_main_plot_title">Wi-Fi points observed</string>
+    <string name="activity_main_plot_domain">Time</string>
+    <string name="activity_main_plot_range">Wi-Fi points</string>
+    <string name="activity_main_button_title">Clear Data</string>
+    <string name="activity_main_greetings_content">Icon made by Darius Dan from www.flaticon.com</string>
+    <string-array name="activity_main_spinner_values">
+        <item>All</item>
+        <item>Last minute</item>
+        <item>Last 5 minutes</item>
+        <item>Last 15 minutes</item>
+        <item>Last hour</item>
+    </string-array>
+    <!-- Notification channel -->
+    <string name="channel_id">CrowdsourcingChannelID</string>
+    <string name="channel_name">CrowdsourcingChannel</string>
+    <string name="notification_title">Crowdsourcing Application</string>
 </resources>

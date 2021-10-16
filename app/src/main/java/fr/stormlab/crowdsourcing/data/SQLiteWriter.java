@@ -88,4 +88,9 @@ public class SQLiteWriter implements DataWriter {
         return data;
     }
 
+    @Override
+    public void clearData() {
+        this.database.execSQL("DELETE FROM crowdsourcing_data");
+    }
+
 }
