@@ -13,7 +13,7 @@ public class Restarter extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Log.i("Broadcast Listened", "Service tried to stop");
         Toast.makeText(context, "Service restarted", Toast.LENGTH_SHORT).show();
-
+        // Restart the service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(new Intent(context, ForegroundService.class));
         } else {

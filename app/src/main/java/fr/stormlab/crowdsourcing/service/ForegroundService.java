@@ -31,8 +31,10 @@ public class ForegroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+        // Start the Wifi job
         WifiJobService.RESCHEDULE = true;
         WifiJobService.scheduleJob(getApplicationContext());
+        // Generate a foreground notification
         this.generateNotification(this.getApplicationContext(), "Application still running");
         return START_STICKY;
     }
@@ -42,6 +44,7 @@ public class ForegroundService extends Service {
         super.onDestroy();
         Log.i("FOREGROUND_SERVICE", "Stopped");
         WifiJobService.RESCHEDULE = false;
+        // Send an intent to restart the foreground service
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction("RestartService");
         broadcastIntent.setClass(this, Restarter.class);

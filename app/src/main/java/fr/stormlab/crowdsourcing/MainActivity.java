@@ -70,6 +70,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
             super(millisInFuture, countDownInterval);
         }
 
+        // When the timer is firing, actualization of the graph
         @RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         public void onTick(long millisUntilFinished) {
@@ -96,22 +97,25 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         ViewGroup.LayoutParams params = this.plot.getLayoutParams();
         params.height = display.getHeight() - 410;
         this.plot.setLayoutParams(params);
+        // To have a display of the hours on the abscissa
+        // This converts timestamp to time
         this.plot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.BOTTOM).setFormat(
-                new Format() {
-                    private final DateFormat dateFormat = DateFormat.getTimeInstance();
-                    @Override
-                    public StringBuffer format(Object obj,
-                                               @NonNull StringBuffer toAppendTo,
-                                               @NonNull FieldPosition pos) {
-                        Number timestamp = (Number) obj;
-                        return dateFormat.format(timestamp, toAppendTo, pos);
-                    }
-                    @Override
-                    public Object parseObject(String source, @NonNull ParsePosition pos) {
-                        return null;
-                    }
+            new Format() {
+                private final DateFormat dateFormat = DateFormat.getTimeInstance();
+                @Override
+                public StringBuffer format(Object obj,
+                                           @NonNull StringBuffer toAppendTo,
+                                           @NonNull FieldPosition pos) {
+                    Number timestamp = (Number) obj;
+                    return dateFormat.format(timestamp, toAppendTo, pos);
                 }
+                @Override
+                public Object parseObject(String source, @NonNull ParsePosition pos) {
+                    return null;
+                }
+            }
         );
+        // Display the graph
         setDataOnPlot(DataToShow.ALL);
         // Set spinner content
         Spinner spinner = findViewById(R.id.activity_main_spinner);
@@ -129,15 +133,18 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
     @Override
     protected void onResume() {
         super.onResume();
+        // Create the timer
         if (this.countDownTimer == null) {
             this.countDownTimer = new ActualizePlotTimer(Long.MAX_VALUE, 10000);
         }
+        // Start the timer each time the application is started or resume after pause
         this.countDownTimer.start();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        // Cancel the timer
         try {
             countDownTimer.cancel();
         } catch (Exception e) {
@@ -148,6 +155,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        // When an element on the select is selected, change the view in the graph
         setDataOnPlot(DataToShow.values()[position]);
     }
 
@@ -160,8 +168,10 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onClick(View v) {
+        // Clear the data from the database
         DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
         dataWriter.clearData();
+        // Actualize the data
         setDataOnPlot(this.currentShow);
     }
 
@@ -171,6 +181,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         Map<Long, List<String>> data  = dataWriter.getData();
         Set<Long> abscissaUnformatted = data.keySet();
         List<Long> abscissa = new LinkedList<>();
+        // Set the timestamp in function of the item selected
         long timestamp = 0;
         switch(dataToShow) {
             case ALL:
@@ -192,8 +203,10 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
                 abscissa.add(entry);
             }
         }
+        // Sort the timestamp
         abscissa.sort(Comparator.naturalOrder());
         List<Integer> ordinate = new ArrayList<>();
+        // Set the range and add ordinate value to a List
         int maxRange = 0;
         int minRange = 0;
         for (long entry : abscissa) {
@@ -205,6 +218,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
             }
         }
         Log.i("Activity", "Number of points : " + ordinate.size());
+        // Creation of the plot
         XYSeries apsXY =  new SimpleXYSeries(abscissa, ordinate, "Wifi Points");
         LineAndPointFormatter series1Format = new
                 LineAndPointFormatter(Color.LTGRAY, Color.parseColor("#3780BF"), null, null);
@@ -216,10 +230,12 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         }
         this.currentSeries = apsXY;
         this.currentShow = dataToShow;
+        // Delete the current data in the plot
         this.plot.clear();
         this.plot.addSeries(apsXY, series1Format);
         this.plot.setRangeBoundaries(minRange, maxRange, BoundaryMode.FIXED);
         this.plot.setRangeStep(StepMode.INCREMENT_BY_VAL, Math.round((maxRange - minRange) / 10));
+        // Show the plot
         this.plot.redraw();
     }
 
