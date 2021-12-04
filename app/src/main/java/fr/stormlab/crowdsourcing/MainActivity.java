@@ -1,63 +1,51 @@
 package fr.stormlab.crowdsourcing;
 
-import android.app.Activity;
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.os.AsyncTask;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
 
-import com.androidplot.xy.BoundaryMode;
-import com.androidplot.xy.LineAndPointFormatter;
-import com.androidplot.xy.SimpleXYSeries;
-import com.androidplot.xy.StepMode;
-import com.androidplot.xy.XYGraphWidget;
-import com.androidplot.xy.XYPlot;
-import com.androidplot.xy.XYSeries;
-import com.androidplot.xy.XYSeriesRenderer;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.text.DateFormat;
-import java.text.FieldPosition;
-import java.text.Format;
-import java.text.ParsePosition;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import fr.stormlab.crowdsourcing.data.DataWriter;
+import fr.stormlab.crowdsourcing.data.Position;
 import fr.stormlab.crowdsourcing.data.SQLiteWriter;
 import fr.stormlab.crowdsourcing.service.ForegroundService;
 
-public class MainActivity extends Activity implements AdapterView.OnItemSelectedListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnMapReadyCallback {
 
-    private XYSeries currentSeries = null;
-    private XYPlot plot = null;
-    private DataToShow currentShow = DataToShow.ALL;
     private CountDownTimer countDownTimer = null;
+    private GoogleMap googleMap = null;
 
-    // Should be in the same order as ./res/values/strings/activity_main_spinner_values
-    private enum DataToShow {ALL, LAST_MINUTE, LAST_5_MINUTES, LAST_15_MINUTES, LAST_HOUR};
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        this.googleMap = googleMap;
+
+    }
 
     //Custom CountDownTimer
-    private class ActualizePlotTimer extends CountDownTimer{
+    private class ActualizeDataTimer extends CountDownTimer {
 
         /**
          * @param millisInFuture    The number of millis in the future from the call
@@ -66,7 +54,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
          * @param countDownInterval The interval along the way to receive
          *                          {@link #onTick(long)} callbacks.
          */
-        public ActualizePlotTimer(long millisInFuture, long countDownInterval) {
+        public ActualizeDataTimer(long millisInFuture, long countDownInterval) {
             super(millisInFuture, countDownInterval);
         }
 
@@ -74,7 +62,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         @RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         public void onTick(long millisUntilFinished) {
-            setDataOnPlot(currentShow);
+            showData();
         }
 
         @Override
@@ -83,7 +71,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    @RequiresApi(api = Build.VERSION_CODES.S)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,152 +79,81 @@ public class MainActivity extends Activity implements AdapterView.OnItemSelected
         // Start the foreground service
         Intent intent = new Intent(getApplicationContext(), ForegroundService.class);
         startForegroundService(intent);
-        // Make the plot
-        this.plot = findViewById(R.id.activity_main_plot);
-        Display display = getWindowManager().getDefaultDisplay();
-        ViewGroup.LayoutParams params = this.plot.getLayoutParams();
-        params.height = display.getHeight() - 410;
-        this.plot.setLayoutParams(params);
-        // To have a display of the hours on the abscissa
-        // This converts timestamp to time
-        this.plot.getGraph().getLineLabelStyle(XYGraphWidget.Edge.BOTTOM).setFormat(
-            new Format() {
-                private final DateFormat dateFormat = DateFormat.getTimeInstance();
-                @Override
-                public StringBuffer format(Object obj,
-                                           @NonNull StringBuffer toAppendTo,
-                                           @NonNull FieldPosition pos) {
-                    Number timestamp = (Number) obj;
-                    return dateFormat.format(timestamp, toAppendTo, pos);
-                }
-                @Override
-                public Object parseObject(String source, @NonNull ParsePosition pos) {
-                    return null;
-                }
-            }
-        );
-        // Display the graph
-        setDataOnPlot(DataToShow.ALL);
-        // Set spinner content
-        Spinner spinner = findViewById(R.id.activity_main_spinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.activity_main_spinner_values,
-                android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(this);
         // Set button action
-        Button button = findViewById(R.id.activity_main_button);
+        Button button = findViewById(R.id.activity_main_button_clear_data);
         button.setOnClickListener(this);
+        button = findViewById(R.id.activity_main_button_update_map);
+        button.setOnClickListener(this);
+        // Show data
+        showData();
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.activity_main_map);
+        mapFragment.getMapAsync(this);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int height = displayMetrics.heightPixels;
+        ViewGroup.LayoutParams params = mapFragment.getView().getLayoutParams();
+        params.height = height - 600;
+        mapFragment.getView().setLayoutParams(params);
+        // Set timer
+        this.countDownTimer = new ActualizeDataTimer(10000,10000);
+        this.countDownTimer.start();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Create the timer
-        if (this.countDownTimer == null) {
-            this.countDownTimer = new ActualizePlotTimer(Long.MAX_VALUE, 10000);
-        }
-        // Start the timer each time the application is started or resume after pause
         this.countDownTimer.start();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // Cancel the timer
-        try {
-            countDownTimer.cancel();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.countDownTimer.cancel();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        // When an element on the select is selected, change the view in the graph
-        setDataOnPlot(DataToShow.values()[position]);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        setDataOnPlot(DataToShow.ALL);
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onClick(View v) {
-        // Clear the data from the database
-        DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
-        dataWriter.clearData();
-        // Actualize the data
-        setDataOnPlot(this.currentShow);
+        Button button = (Button) v;
+        if (button.getId() == R.id.activity_main_button_update_map) {
+            showData();
+        }
+        else {
+            // Clear the data from the database
+            DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
+            dataWriter.clearData();
+        }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    private void setDataOnPlot(DataToShow dataToShow) {
-        DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
-        Map<Long, List<String>> data  = dataWriter.getData();
-        Set<Long> abscissaUnformatted = data.keySet();
-        List<Long> abscissa = new LinkedList<>();
-        // Set the timestamp in function of the item selected
-        long timestamp = 0;
-        switch(dataToShow) {
-            case ALL:
-                break;
-            case LAST_MINUTE:
-                timestamp = System.currentTimeMillis() - 60 * 1000;
-                break;
-            case LAST_5_MINUTES:
-                timestamp = System.currentTimeMillis() - 5 * 60 * 1000;
-                break;
-            case LAST_15_MINUTES:
-                timestamp = System.currentTimeMillis() - 15 * 60 * 1000;
-                break;
-            case LAST_HOUR:
-                timestamp = System.currentTimeMillis() - 60 * 60 * 1000;
-        }
-        for (long entry : abscissaUnformatted) {
-            if (entry >= timestamp) {
-                abscissa.add(entry);
+    private void showData() {
+        if (this.googleMap != null) {
+            this.googleMap.clear();
+            DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
+            Map<Integer, List<String>> data = dataWriter.getData();
+            for (Map.Entry<Integer, List<String>> entry : data.entrySet()) {
+                // Get Position point
+                Position position = dataWriter.getLocation(entry.getKey());
+                LatLng tmpPosition = new LatLng(position.latitude, position.longitude);
+                StringBuilder snippet = new StringBuilder();
+                for (String wifiPoint : entry.getValue()) {
+                    snippet.append(wifiPoint).append("\n");
+                }
+                this.googleMap.addMarker(new MarkerOptions()
+                        .position(tmpPosition)
+                        .title(entry.getValue().size() + " wifi point detected")
+                );
+            }
+            LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location != null){
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                LatLng current = new LatLng(latitude, longitude);
+                this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(current));
             }
         }
-        // Sort the timestamp
-        abscissa.sort(Comparator.naturalOrder());
-        List<Integer> ordinate = new ArrayList<>();
-        // Set the range and add ordinate value to a List
-        int maxRange = 0;
-        int minRange = 0;
-        for (long entry : abscissa) {
-            List<String> listWifi = data.get(entry);
-            if (listWifi == null) ordinate.add(0);
-            else {
-                if (maxRange < listWifi.size()) maxRange = listWifi.size();
-                ordinate.add(listWifi.size());
-            }
-        }
-        Log.i("Activity", "Number of points : " + ordinate.size());
-        // Creation of the plot
-        XYSeries apsXY =  new SimpleXYSeries(abscissa, ordinate, "Wifi Points");
-        LineAndPointFormatter series1Format = new
-                LineAndPointFormatter(Color.LTGRAY, Color.parseColor("#3780BF"), null, null);
-        if (this.plot == null) {
-            this.plot = findViewById(R.id.activity_main_plot);
-        }
-        if (this.currentSeries != null) {
-            this.plot.removeSeries(this.currentSeries);
-        }
-        this.currentSeries = apsXY;
-        this.currentShow = dataToShow;
-        // Delete the current data in the plot
-        this.plot.clear();
-        this.plot.addSeries(apsXY, series1Format);
-        this.plot.setRangeBoundaries(minRange, maxRange, BoundaryMode.FIXED);
-        this.plot.setRangeStep(StepMode.INCREMENT_BY_VAL, Math.round((maxRange - minRange) / 10));
-        // Show the plot
-        this.plot.redraw();
     }
 
 }

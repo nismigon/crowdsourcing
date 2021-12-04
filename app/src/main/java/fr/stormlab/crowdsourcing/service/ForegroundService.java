@@ -15,7 +15,6 @@ import androidx.core.app.NotificationCompat;
 
 import fr.stormlab.crowdsourcing.MainActivity;
 import fr.stormlab.crowdsourcing.R;
-import fr.stormlab.crowdsourcing.wifi.WifiJobService;
 
 // This service permits to continue to execute the service, whereas the application is closed
 public class ForegroundService extends Service {

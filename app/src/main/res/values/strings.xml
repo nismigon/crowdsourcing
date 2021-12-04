@@ -5,7 +5,8 @@
     <string name="activity_main_plot_title">Wi-Fi points observed</string>
     <string name="activity_main_plot_domain">Time</string>
     <string name="activity_main_plot_range">Wi-Fi points</string>
-    <string name="activity_main_button_title">Clear Data</string>
+    <string name="activity_main_button_update_map_title">Update Map</string>
+    <string name="activity_main_button_clear_data_title">Clear Data</string>
     <string name="activity_main_greetings_content">Icon made by Darius Dan from www.flaticon.com</string>
     <string-array name="activity_main_spinner_values">
         <item>All</item>

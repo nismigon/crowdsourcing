@@ -4,7 +4,8 @@ import java.util.Map;
 import java.util.List;
 
 public interface DataWriter {
-    boolean addData(long timestamp, List<String> wifiPoints);
-    Map<Long, List<String>> getData();
+    boolean addData(double latitude, double longitude, List<String> wifiPoints);
+    Map<Integer, List<String>> getData();
     void clearData();
+    Position getLocation(int gps_id);
 }
