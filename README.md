@@ -12,12 +12,10 @@ You have 3 main packages :
 
 - data : This package permits to manipulate the storage of the data (GET,
 ADD, DELETE)
-- service : This package corresponds to the foreground service, this is the 
-persistant service which will call the job which scan the Wi-Fi
-- wifi : This package corresponds to the job which interact with the Wi-Fi as
-start the scan and get the results
+- service : This package corresponds to the foreground service (the notification) and the Wi-Fi service
 
 In the general package, you have also the MainActivity, which corresponds of
-the display of the application.
+the display of the application with Google Maps, and you have the RawDataActivity
+with the display of the raw data directly.
 
 
