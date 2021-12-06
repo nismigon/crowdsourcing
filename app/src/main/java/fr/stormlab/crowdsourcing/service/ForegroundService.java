@@ -11,6 +11,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import fr.stormlab.crowdsourcing.MainActivity;
@@ -27,6 +28,7 @@ public class ForegroundService extends Service {
         Log.i("FOREGROUND_SERVICE", "Started");
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
@@ -34,7 +36,7 @@ public class ForegroundService extends Service {
         WifiJobService.RESCHEDULE = true;
         WifiJobService.scheduleJob(getApplicationContext());
         // Generate a foreground notification
-        this.generateNotification(this.getApplicationContext(), "Application still running");
+        this.generateNotification(this.getApplicationContext());
         return START_STICKY;
     }
 
@@ -51,10 +53,12 @@ public class ForegroundService extends Service {
     }
 
     // Generate (or modify if existing) a notification
-    private void generateNotification(Context context, String message) {
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void generateNotification(Context context) {
         Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        // Creation of the channel
         String channelId = getString(R.string.channel_id);
         String channelName = getString(R.string.channel_name);
         int importance = NotificationManager.IMPORTANCE_HIGH;
@@ -63,9 +67,10 @@ public class ForegroundService extends Service {
                     channelId, channelName, importance);
             notificationManager.createNotificationChannel(channel);
         }
+        // Creation of the notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId);
         builder.setContentTitle(getString(R.string.notification_title));
-        builder.setContentText(message);
+        builder.setContentText("Application still running");
         builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentIntent(pendingIntent);
         startForeground(ForegroundService.NOTIFICATION_ID, builder.build());

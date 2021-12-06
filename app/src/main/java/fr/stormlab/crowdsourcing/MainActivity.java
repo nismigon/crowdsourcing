@@ -27,9 +27,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import fr.stormlab.crowdsourcing.data.DataWriter;
-import fr.stormlab.crowdsourcing.data.Position;
+import fr.stormlab.crowdsourcing.data.GPSObject;
 import fr.stormlab.crowdsourcing.data.SQLiteWriter;
 import fr.stormlab.crowdsourcing.service.ForegroundService;
 
@@ -41,7 +42,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
-
+        // Set height of the map
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int height = displayMetrics.heightPixels;
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.activity_main_map);
+        assert mapFragment != null;
+        ViewGroup.LayoutParams params = mapFragment.requireView().getLayoutParams();
+        params.height = height - 600;
+        mapFragment.getView().setLayoutParams(params);
+        // Show data
+        showData();
     }
 
     //Custom CountDownTimer
@@ -71,11 +83,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    @SuppressLint("MissingPermission")
     @RequiresApi(api = Build.VERSION_CODES.S)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Start location request
+        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0,
+                location -> Log.i("ACTIVITY_MAIN", "Location Updated"));
         // Start the foreground service
         Intent intent = new Intent(getApplicationContext(), ForegroundService.class);
         startForegroundService(intent);
@@ -84,19 +101,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         button.setOnClickListener(this);
         button = findViewById(R.id.activity_main_button_update_map);
         button.setOnClickListener(this);
-        // Show data
-        showData();
+        button = findViewById(R.id.activity_main_button_switch_raw_data);
+        button.setOnClickListener(this);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.activity_main_map);
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int height = displayMetrics.heightPixels;
-        ViewGroup.LayoutParams params = mapFragment.getView().getLayoutParams();
-        params.height = height - 600;
-        mapFragment.getView().setLayoutParams(params);
         // Set timer
-        this.countDownTimer = new ActualizeDataTimer(10000,10000);
+        this.countDownTimer = new ActualizeDataTimer(30000,30000);
         this.countDownTimer.start();
     }
 
@@ -120,10 +132,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (button.getId() == R.id.activity_main_button_update_map) {
             showData();
         }
+        else if (button.getId() == R.id.activity_main_button_switch_raw_data) {
+            Intent myIntent = new Intent(this, RawDataActivity.class);
+            this.startActivity(myIntent);
+        }
         else {
             // Clear the data from the database
             DataWriter dataWriter = new SQLiteWriter(this.getApplicationContext());
             dataWriter.clearData();
+            showData();
         }
     }
 
@@ -134,24 +151,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Map<Integer, List<String>> data = dataWriter.getData();
             for (Map.Entry<Integer, List<String>> entry : data.entrySet()) {
                 // Get Position point
-                Position position = dataWriter.getLocation(entry.getKey());
+                GPSObject position = dataWriter.getLocation(entry.getKey());
                 LatLng tmpPosition = new LatLng(position.latitude, position.longitude);
-                StringBuilder snippet = new StringBuilder();
-                for (String wifiPoint : entry.getValue()) {
-                    snippet.append(wifiPoint).append("\n");
-                }
                 this.googleMap.addMarker(new MarkerOptions()
                         .position(tmpPosition)
                         .title(entry.getValue().size() + " wifi point detected")
                 );
             }
             LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            // Bug in Android Studio, this permission have been already added in AndroidManifest.xml
+            @SuppressLint("MissingPermission")
             Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            // Update the location of the camera
             if (location != null){
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 LatLng current = new LatLng(latitude, longitude);
-                this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(current));
+                this.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15));
             }
         }
     }

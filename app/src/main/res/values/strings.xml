@@ -1,13 +1,19 @@
 <resources>
     <string name="app_name">Crowdsourcing</string>
     <!-- Activity main -->
-    <string name="activity_main_title">Crowdsourcing</string>
+    <string name="activity_main_title">Map View</string>
     <string name="activity_main_plot_title">Wi-Fi points observed</string>
     <string name="activity_main_plot_domain">Time</string>
     <string name="activity_main_plot_range">Wi-Fi points</string>
     <string name="activity_main_button_update_map_title">Update Map</string>
     <string name="activity_main_button_clear_data_title">Clear Data</string>
+    <string name="activity_main_button_switch_raw_data_title">Raw Data</string>
+    <string name="activity_raw_data_button_update_data_title">Update Data</string>
+    <string name="activity_raw_data_button_map_title">Map</string>
+    <string name="activity_raw_data_clear_data_title">Clear Data</string>
+    <string name="activity_raw_data_title">Raw Data View</string>
     <string name="activity_main_greetings_content">Icon made by Darius Dan from www.flaticon.com</string>
+    <string name="activity_raw_data_raw_data_default_title">No Data</string>
     <string-array name="activity_main_spinner_values">
         <item>All</item>
         <item>Last minute</item>

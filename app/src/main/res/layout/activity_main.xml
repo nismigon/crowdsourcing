@@ -27,37 +27,49 @@
 
     <Button
         android:id="@+id/activity_main_button_update_map"
-        style="@style/Widget.AppCompat.Button.Borderless"
+        style="@null"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="36dp"
-        android:background="@drawable/round_shape_btn"
         android:padding="10dp"
         android:text="@string/activity_main_button_update_map_title"
         android:textColor="@color/white"
         android:textColorHighlight="@color/white"
         android:textColorLink="@color/white"
-        ap:cornerRadius="50dp"
         ap:layout_constraintStart_toStartOf="parent"
         ap:layout_constraintTop_toBottomOf="@+id/activity_main_map"
         tools:ignore="TextContrastCheck" />
 
     <Button
         android:id="@+id/activity_main_button_clear_data"
-        style="@style/Widget.AppCompat.Button.Borderless"
+        style="@null"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="36dp"
-        android:layout_marginEnd="32dp"
-        android:background="@drawable/round_shape_btn"
+        android:layout_marginEnd="16dp"
         android:padding="10dp"
         android:text="@string/activity_main_button_clear_data_title"
         android:textColor="@color/white"
         android:textColorHighlight="@color/white"
         android:textColorLink="@color/white"
-        ap:cornerRadius="50dp"
         ap:layout_constraintEnd_toEndOf="parent"
+        ap:layout_constraintTop_toBottomOf="@+id/activity_main_map"
+        tools:ignore="TextContrastCheck" />
+
+    <Button
+        android:id="@+id/activity_main_button_switch_raw_data"
+        style="@null"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="36dp"
+        android:padding="10dp"
+        android:text="@string/activity_main_button_switch_raw_data_title"
+        android:textColor="@color/white"
+        android:textColorHighlight="@color/white"
+        android:textColorLink="@color/white"
+        ap:layout_constraintEnd_toStartOf="@+id/activity_main_button_clear_data"
+        ap:layout_constraintStart_toEndOf="@+id/activity_main_button_update_map"
         ap:layout_constraintTop_toBottomOf="@+id/activity_main_map"
         tools:ignore="TextContrastCheck" />
 

@@ -1,7 +1,7 @@
 package fr.stormlab.crowdsourcing.service;
 
 import android.Manifest;
-import android.app.PendingIntent;
+import android.annotation.SuppressLint;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
@@ -10,14 +10,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 import java.util.ArrayList;
@@ -38,6 +36,7 @@ public class WifiJobService extends JobService {
 
     // Method launch when the job start
     // It basically creates an handler when the results of the scan arrived, and start the scan
+    @SuppressLint("MissingPermission")
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public boolean onStartJob(JobParameters jobParameters) {
@@ -57,13 +56,11 @@ public class WifiJobService extends JobService {
         for (ScanResult scanResult : scanResultList) {
             wifiPoints.add(scanResult.BSSID);
         }
-        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, location -> {
-            Log.i("WIFI_JOB_SERVICE", "Value updated");
-            double longitude = location.getLongitude();
-            double latitude = location.getLatitude();
-            writer.addData(latitude, longitude, wifiPoints);
-        });
+        if (wifiPoints.size() != 0) {
+            LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            writer.addData(location.getLatitude(), location.getLongitude(), wifiPoints);
+        }
         scheduleJob(this.getApplicationContext());
         return true;
     }
